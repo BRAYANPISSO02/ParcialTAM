@@ -155,22 +155,22 @@ Para publicar el sitio en la web a través de GitHub Pages de manera gratuita y 
    ```
 
 2. **Crear el repositorio en GitHub y vincularlo:**
-   Crear un repositorio público en GitHub (por ejemplo, `parcial-tam-ml`) y vincularlo:
+   Crear un repositorio público en GitHub (por ejemplo, `ParcialTAM`) y vincularlo:
    ```bash
    git branch -M main
-   git remote add origin https://github.com/<TU_USUARIO>/<TU_REPOSITORIO>.git
+   git remote add origin https://github.com/BRAYANPISSO02/ParcialTAM.git
    git push -u origin main
    ```
 
 3. **Activar GitHub Pages:**
-   * Ir a la página del repositorio en GitHub.
+   * Ir a la página del repositorio en GitHub: [https://github.com/BRAYANPISSO02/ParcialTAM](https://github.com/BRAYANPISSO02/ParcialTAM)
    * Entrar a la pestaña **Settings** > **Pages** (en el menú lateral izquierdo).
    * En la sección **Build and deployment**:
      * **Source:** Seleccionar `Deploy from a branch`.
      * **Branch:** Seleccionar `main` y carpeta `/ (root)`.
      * Hacer clic en **Save**.
-   * En 1 o 2 minutos, GitHub Pages publicará el sitio web en la URL:
-     `https://<TU_USUARIO>.github.io/<TU_REPOSITORIO>/`
+   * El sitio queda desplegado y accesible públicamente en:
+     **[https://brayanpisso02.github.io/ParcialTAM/](https://brayanpisso02.github.io/ParcialTAM/)**
 
 ---
 
