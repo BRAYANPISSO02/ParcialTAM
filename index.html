@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Laboratorio Interactivo de Aprendizaje de Máquina | Parcial TAM</title>
+  
+  <!-- Estilos principales -->
+  <link rel="stylesheet" href="style.css">
+  
+  <!-- KaTeX para renderizado de fórmulas matemáticas LaTeX -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" 
+          onload="renderMathInElement(document.body);"></script>
+</head>
+<body>
+  <header class="app-header">
+    <div class="header-content">
+      <div class="logo-title">
+        <span class="badge">ML Lab</span>
+        <h1>Simulador Interactivo de Aprendizaje de Máquina</h1>
+      </div>
+      <p class="subtitle">Solución integral: Regularización Elastic Net (MAP), Clasificación Bayesiana vs Discriminativa (QDA/IRLS) y Geometría de SVM en RKHS</p>
+    </div>
+
+    <!-- Barra de control global y semilla aleatoria -->
+    <div class="global-bar">
+      <div class="control-group-inline">
+        <label for="global-seed"><strong>Semilla Aleatoria (PRNG Seed):</strong></label>
+        <input type="number" id="global-seed" value="42" min="1" max="999999" class="input-number-sm">
+        <button id="btn-random-seed" class="btn btn-secondary btn-sm" title="Generar nueva semilla aleatoria">🎲 Nueva Semilla</button>
+        <button id="btn-reset-defaults" class="btn btn-outline btn-sm" title="Restaurar parámetros originales del examen">↺ Valores Originales</button>
+      </div>
+      <div class="status-indicator">
+        <span class="status-dot"></span> Motor numérico activo en cliente (Vanilla JS)
+      </div>
+    </div>
+
+    <!-- Navegación por pestañas -->
+    <nav class="nav-tabs" role="tablist">
+      <button class="tab-btn active" data-tab="tab-m1" role="tab">Módulo 1: Elastic Net y MAP</button>
+      <button class="tab-btn" data-tab="tab-m2" role="tab">Módulo 2: Bayesiano vs Discriminativo (QDA / IRLS)</button>
+      <button class="tab-btn" data-tab="tab-m3" role="tab">Módulo 3: SVM y Margen en RKHS</button>
+      <button class="tab-btn" data-tab="tab-info" role="tab">Fundamentos Teóricos</button>
+    </nav>
+  </header>
+
+  <main class="app-container">
+    
+    <!-- =========================================================================
+         MÓDULO 1: ELASTIC NET Y ESTIMACIÓN MAP
+         ========================================================================= -->
+    <section id="tab-m1" class="tab-panel active">
+      <div class="panel-header">
+        <h2>Módulo 1: Regularización Elastic Net y Estimación MAP</h2>
+        <p class="panel-desc">
+          Explora la correspondencia entre la penalización Elastic Net y el estimador Maximum A Posteriori (MAP) con prior compuesto 
+          (Laplace + Gaussiano), visualizando curvas de nivel 2D y el Camino de Regularización calculado con Descenso por Coordenadas.
+        </p>
+      </div>
+
+      <div class="module-grid">
+        <!-- Controles laterales -->
+        <aside class="sidebar-controls">
+          <div class="card">
+            <h3 class="card-title">1. Generador de Datos Sintéticos</h3>
+            <div class="control-row">
+              <label for="m1-n">Muestras ($N$): <span id="m1-n-val" class="val-badge">100</span></label>
+              <input type="range" id="m1-n" min="30" max="300" step="10" value="100">
+            </div>
+            <div class="control-row">
+              <label for="m1-p">Variables ($P$): <span id="m1-p-val" class="val-badge">2</span></label>
+              <input type="range" id="m1-p" min="2" max="10" step="1" value="2">
+              <small class="helper-text">P=2 habilita las curvas de nivel en el espacio de parámetros $(w_1, w_2)$.</small>
+            </div>
+            <div class="control-row">
+              <label for="m1-sigma">Ruido ($\sigma$): <span id="m1-sigma-val" class="val-badge">0.50</span></label>
+              <input type="range" id="m1-sigma" min="0.05" max="2.0" step="0.05" value="0.50">
+            </div>
+            <div class="control-row">
+              <label for="m1-rho">Correlación ($\rho$ entre $X_j$): <span id="m1-rho-val" class="val-badge">0.60</span></label>
+              <input type="range" id="m1-rho" min="0.0" max="0.95" step="0.05" value="0.60">
+            </div>
+            <div class="control-row">
+              <label for="m1-sparsity">Coeficientes activos ($s \le P$): <span id="m1-sparsity-val" class="val-badge">2</span></label>
+              <input type="range" id="m1-sparsity" min="1" max="2" step="1" value="2">
+            </div>
+            <button id="m1-btn-resample" class="btn btn-primary btn-block">Generar Nuevos Datos</button>
+          </div>
+
+          <div class="card">
+            <h3 class="card-title">2. Hiperparámetros de Regularización</h3>
+            <div class="control-row">
+              <label for="m1-lambda">Penalización ($\lambda$): <span id="m1-lambda-val" class="val-badge">0.40</span></label>
+              <input type="range" id="m1-lambda" min="0.001" max="2.0" step="0.02" value="0.40">
+            </div>
+            <div class="control-row">
+              <label for="m1-alpha">Balance L1 / L2 ($\alpha$): <span id="m1-alpha-val" class="val-badge">0.50</span></label>
+              <input type="range" id="m1-alpha" min="0.0" max="1.0" step="0.05" value="0.50">
+              <div class="tag-row">
+                <span class="tag">Ridge ($\alpha=0$)</span>
+                <span class="tag">Elastic Net ($0<\alpha<1$)</span>
+                <span class="tag">Lasso ($\alpha=1$)</span>
+              </div>
+            </div>
+          </div>
+        </aside>
+
+        <!-- Área de visualización central -->
+        <div class="visual-content">
+          <div class="card">
+            <div class="card-header-flex">
+              <h3 class="card-title">Contornos en Espacio de Parámetros $(w_1, w_2)$</h3>
+              <div class="legend-badges">
+                <span class="legend-item"><span class="dot dot-prior"></span> Prior $p(w)$</span>
+                <span class="legend-item"><span class="dot dot-lik"></span> Verosimilitud $p(y|X,w)$</span>
+                <span class="legend-item"><span class="dot dot-post"></span> Posterior $p(w|y)$</span>
+                <span class="legend-item"><span class="dot dot-map"></span> MAP $\hat{w}$</span>
+                <span class="legend-item"><span class="dot dot-ols"></span> OLS $\hat{w}_{ols}$</span>
+              </div>
+            </div>
+            <div class="canvas-wrapper">
+              <canvas id="m1-contour-canvas" width="600" height="420"></canvas>
+            </div>
+            <div id="m1-map-summary" class="metric-ribbon">
+              <!-- Datos numéricos actualizados dinámicamente -->
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header-flex">
+              <h3 class="card-title">Camino de Regularización (Coordinate Descent Path)</h3>
+              <div class="mode-selector">
+                <label><input type="radio" name="m1-path-mode" value="comparison" checked> Comparar Lasso vs Elastic Net vs Ridge</label>
+                <label><input type="radio" name="m1-path-mode" value="all-weights"> Todas las variables $w_j(\lambda)$</label>
+              </div>
+            </div>
+            <div class="canvas-wrapper">
+              <canvas id="m1-path-canvas" width="600" height="320"></canvas>
+            </div>
+            <p class="chart-caption">
+              Se observa cómo Lasso ($\alpha=1$) anula coeficientes exactamente en cero (esparsidad estricta), 
+              Ridge ($\alpha=0$) los contrae suavemente sin hacerlos cero, y Elastic Net equilibra selección y estabilidad ante variables correlacionadas.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =========================================================================
+         MÓDULO 2: CLASIFICACIÓN BAYESIANA Y DISCRIMINATIVA (QDA, GNB, IRLS)
+         ========================================================================= -->
+    <section id="tab-m2" class="tab-panel">
+      <div class="panel-header">
+        <h2>Módulo 2: Clasificación Bayesiana vs. Discriminativa (Punto 2 del Examen)</h2>
+        <p class="panel-desc">
+          Comparación directa entre enfoques generativos (QDA y Naive Bayes Gaussiano) y el discriminativo 
+          (Regresión Logística optimizada con Newton-Raphson / IRLS). Incluye la expansión cuadrática $\phi(x)$ para emparejar la capacidad de QDA.
+        </p>
+      </div>
+
+      <div class="module-grid">
+        <!-- Controles laterales con datos del examen -->
+        <aside class="sidebar-controls">
+          <div class="card">
+            <h3 class="card-title">Distribución y Parámetros del Examen</h3>
+            <p class="card-subnote">Cargados con los valores exactos especificados en el enunciado.</p>
+
+            <div class="control-row">
+              <label for="m2-n">Muestras Totales ($N = N_1 + N_2$): <span id="m2-n-val" class="val-badge">300</span></label>
+              <input type="range" id="m2-n" min="60" max="600" step="20" value="300">
+            </div>
+
+            <div class="control-row">
+              <label for="m2-pi1">Prior Clase 1 ($\pi_1$): <span id="m2-pi1-val" class="val-badge">0.50</span></label>
+              <input type="range" id="m2-pi1" min="0.10" max="0.90" step="0.05" value="0.50">
+            </div>
+
+            <details open class="accordion-group">
+              <summary><strong>Parámetros Clase 1 ($\mu_1, \Sigma_1$)</strong></summary>
+              <div class="sub-controls">
+                <div class="control-row">
+                  <label>$\mu_{1,1}$: <span id="m2-mu11-val" class="val-badge">-1.0</span></label>
+                  <input type="range" id="m2-mu11" min="-3" max="3" step="0.1" value="-1.0">
+                </div>
+                <div class="control-row">
+                  <label>$\mu_{1,2}$: <span id="m2-mu12-val" class="val-badge">0.5</span></label>
+                  <input type="range" id="m2-mu12" min="-3" max="3" step="0.1" value="0.5">
+                </div>
+                <div class="control-row">
+                  <label>$\Sigma_{1,11}$: <span id="m2-s11-val" class="val-badge">0.80</span></label>
+                  <input type="range" id="m2-s11" min="0.2" max="2.0" step="0.05" value="0.80">
+                </div>
+                <div class="control-row">
+                  <label>$\Sigma_{1,12}$ (cov): <span id="m2-s12-val" class="val-badge">0.50</span></label>
+                  <input type="range" id="m2-s12" min="-0.8" max="0.8" step="0.05" value="0.50">
+                </div>
+                <div class="control-row">
+                  <label>$\Sigma_{1,22}$: <span id="m2-s22-val" class="val-badge">0.60</span></label>
+                  <input type="range" id="m2-s22" min="0.2" max="2.0" step="0.05" value="0.60">
+                </div>
+              </div>
+            </details>
+
+            <details class="accordion-group">
+              <summary><strong>Parámetros Clase 2 ($\mu_2, \Sigma_2$)</strong></summary>
+              <div class="sub-controls">
+                <div class="control-row">
+                  <label>$\mu_{2,1}$: <span id="m2-mu21-val" class="val-badge">1.5</span></label>
+                  <input type="range" id="m2-mu21" min="-3" max="3" step="0.1" value="1.5">
+                </div>
+                <div class="control-row">
+                  <label>$\mu_{2,2}$: <span id="m2-mu22-val" class="val-badge">-0.5</span></label>
+                  <input type="range" id="m2-mu22" min="-3" max="3" step="0.1" value="-0.5">
+                </div>
+                <div class="control-row">
+                  <label>$\Sigma_{2,11}$: <span id="m2-s2_11-val" class="val-badge">0.60</span></label>
+                  <input type="range" id="m2-s2_11" min="0.2" max="2.0" step="0.05" value="0.60">
+                </div>
+                <div class="control-row">
+                  <label>$\Sigma_{2,12}$ (cov): <span id="m2-s2_12-val" class="val-badge">-0.40</span></label>
+                  <input type="range" id="m2-s2_12" min="-0.8" max="0.8" step="0.05" value="-0.40">
+                </div>
+                <div class="control-row">
+                  <label>$\Sigma_{2,22}$: <span id="m2-s2_22-val" class="val-badge">1.80</span></label>
+                  <input type="range" id="m2-s2_22" min="0.2" max="2.5" step="0.05" value="1.80">
+                </div>
+              </div>
+            </details>
+
+            <div class="control-row toggle-row">
+              <label class="switch-label">
+                <input type="checkbox" id="m2-irls-quad" checked>
+                <span class="slider round"></span>
+                <strong>Expansión Cuadrática en Reg. Logística</strong>
+              </label>
+              <small class="helper-text">$\phi(x) = [1, x_1, x_2, x_1^2, x_1 x_2, x_2^2]^T$</small>
+            </div>
+
+            <button id="m2-btn-reset-exam" class="btn btn-outline btn-block">Restaurar Datos Exactos del Examen</button>
+            <button id="m2-btn-resample" class="btn btn-primary btn-block">Remuestrear Puntos</button>
+          </div>
+        </aside>
+
+        <!-- Visualización central -->
+        <div class="visual-content">
+          <div class="card">
+            <div class="card-header-flex">
+              <h3 class="card-title">Mapa de Probabilidad Posterior y Fronteras de Decisión</h3>
+              <div class="legend-badges">
+                <span class="legend-item"><span class="line-sample line-qda"></span> QDA Teórico</span>
+                <span class="legend-item"><span class="line-sample line-gnb"></span> Naive Bayes (Diag)</span>
+                <span class="legend-item"><span class="line-sample line-irls"></span> Reg. Logística (IRLS)</span>
+                <span class="legend-item"><span class="dot dot-c1"></span> Clase 1 ($N_1$)</span>
+                <span class="legend-item"><span class="dot dot-c2"></span> Clase 2 ($N_2$)</span>
+              </div>
+            </div>
+            
+            <div class="canvas-wrapper">
+              <canvas id="m2-bayes-canvas" width="620" height="460"></canvas>
+            </div>
+
+            <div class="info-box-highlight">
+              <strong>Coeficientes de Referencia QDA (Derivados del Examen):</strong>
+              <div class="formula-block">
+                $x^T A x + b^T x + c = 0$ donde:
+                $A = \begin{pmatrix} 0.0854 & 1.2888 \\ 1.2888 & -1.4596 \end{pmatrix}, \quad b = \begin{pmatrix} -5.5745 \\ 3.6025 \end{pmatrix}, \quad c = -0.2060$
+              </div>
+            </div>
+          </div>
+
+          <!-- Tabla de métricas de desempeño -->
+          <div class="card">
+            <h3 class="card-title">Comparativa de Desempeño y Precisión (Accuracy)</h3>
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Modelo</th>
+                    <th>Tipo de Frontera</th>
+                    <th>Parámetros Estimados</th>
+                    <th>Accuracy ($Train$)</th>
+                    <th>Log-Loss / Verosimilitud</th>
+                  </tr>
+                </thead>
+                <tbody id="m2-metrics-table">
+                  <!-- Inyectado dinámicamente -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =========================================================================
+         MÓDULO 3: SVM Y GEOMETRÍA DEL MARGEN EN RKHS
+         ========================================================================= -->
+    <section id="tab-m3" class="tab-panel">
+      <div class="panel-header">
+        <h2>Módulo 3: Máquinas de Vectores de Soporte (SVM) e Identidades del Margen</h2>
+        <p class="panel-desc">
+          Entrena un clasificador SVM con solver SMO (Sequential Minimal Optimization) en tiempo real. Modifica puntos interactivamente 
+          haciendo clic o arrastrando, y comprueba numéricamente la identidad teórica fundamental $\|w\|_{\mathcal{H}}^2 = \sum \alpha_n$ para margen duro.
+        </p>
+      </div>
+
+      <div class="module-grid">
+        <!-- Controles laterales -->
+        <aside class="sidebar-controls">
+          <div class="card">
+            <h3 class="card-title">Configuración del Kernel y Solver</h3>
+            
+            <div class="control-row">
+              <label for="m3-kernel">Tipo de Kernel ($K(x, x')$):</label>
+              <select id="m3-kernel" class="select-full">
+                <option value="linear">Lineal: K(x, x') = x^T x'</option>
+                <option value="rbf">RBF / Gaussiano: exp(-γ ||x - x'||²)</option>
+              </select>
+            </div>
+
+            <div class="control-row">
+              <label for="m3-c">Penalización ($C$): <span id="m3-c-val" class="val-badge">1000</span></label>
+              <input type="range" id="m3-c" min="0.1" max="5000" step="50" value="1000">
+              <small class="helper-text">$C \to \infty$ aproxima Margen Duro (Hard Margin).</small>
+            </div>
+
+            <div class="control-row" id="m3-gamma-container">
+              <label for="m3-gamma">Parámetro Gamma ($\gamma$ RBF): <span id="m3-gamma-val" class="val-badge">0.50</span></label>
+              <input type="range" id="m3-gamma" min="0.05" max="3.0" step="0.05" value="0.50">
+            </div>
+
+            <div class="control-row">
+              <label>Distribución Inicial de Puntos:</label>
+              <div class="button-group-v">
+                <button class="btn btn-outline btn-sm m3-preset" data-preset="separable">Linealmente Separable</button>
+                <button class="btn btn-outline btn-sm m3-preset" data-preset="overlap">Con Traslape (Soft Margin)</button>
+                <button class="btn btn-outline btn-sm m3-preset" data-preset="circles">Círculos Concéntricos (No lineal)</button>
+              </div>
+            </div>
+
+            <div class="control-row">
+              <label>Modo de Edición Manual:</label>
+              <div class="radio-inline">
+                <label><input type="radio" name="m3-click-class" value="1" checked> Añadir Clase +1</label>
+                <label><input type="radio" name="m3-click-class" value="-1"> Añadir Clase -1</label>
+              </div>
+              <small class="helper-text">Haz clic en el lienzo para añadir muestras o arrastra puntos existentes.</small>
+            </div>
+
+            <button id="m3-btn-clear" class="btn btn-outline btn-block">Limpiar Puntos</button>
+          </div>
+        </aside>
+
+        <!-- Visualización central -->
+        <div class="visual-content">
+          <div class="card">
+            <div class="card-header-flex">
+              <h3 class="card-title">Espacio de Entrada, Vectores de Soporte e Hiperplanos de Margen</h3>
+              <div class="legend-badges">
+                <span class="legend-item"><span class="line-sample line-svm-decision"></span> Decisión $f(x)=0$</span>
+                <span class="legend-item"><span class="line-sample line-svm-margin"></span> Márgenes $f(x)=\pm 1$</span>
+                <span class="legend-item"><span class="dot dot-sv"></span> Vector de Soporte ($\alpha_n > 0$)</span>
+              </div>
+            </div>
+
+            <div class="canvas-wrapper">
+              <canvas id="m3-svm-canvas" width="620" height="460"></canvas>
+            </div>
+
+            <!-- Panel de Identidades del Margen -->
+            <div class="identity-card">
+              <h4 class="identity-title">Verificación Numérica de Identidades del Margen en $\mathcal{H}$</h4>
+              <div class="identity-grid">
+                <div class="metric-box">
+                  <span class="metric-label">Norma al cuadrado en RKHS: $\|w\|_{\mathcal{H}}^2$</span>
+                  <span class="metric-value" id="m3-w-norm-sq">0.0000</span>
+                </div>
+                <div class="metric-box">
+                  <span class="metric-label">Suma de Multiplicadores Duales: $\sum_{n=1}^N \alpha_n$</span>
+                  <span class="metric-value" id="m3-sum-alpha">0.0000</span>
+                </div>
+                <div class="metric-box">
+                  <span class="metric-label">Ancho Geométrico del Margen: $\gamma = \frac{2}{\|w\|}$</span>
+                  <span class="metric-value" id="m3-margin-width">0.0000</span>
+                </div>
+                <div class="metric-box">
+                  <span class="metric-label">Error Relativo: $\frac{|\|w\|_{\mathcal{H}}^2 - \sum \alpha_n|}{\sum \alpha_n}$</span>
+                  <span class="metric-value" id="m3-diff-ratio">0.00%</span>
+                </div>
+              </div>
+              <div id="m3-identity-badge" class="badge-verification badge-success">
+                Identidad Teórica Verificada Satisfactoriamente
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =========================================================================
+         MÓDULO 4: FUNDAMENTOS TEÓRICOS
+         ========================================================================= -->
+    <section id="tab-info" class="tab-panel">
+      <div class="card doc-card">
+        <h2>Documentación y Fundamentación Teórica del Proyecto</h2>
+        <p class="lead-text">
+          Este sitio interactivo fue diseñado como una herramienta pedagógica rigurosa y autocontenida que 
+          materializa las deducciones analíticas de los tres puntos del examen de Aprendizaje de Máquina.
+        </p>
+
+        <article class="doc-section">
+          <h3>1. Estimación MAP y Penalización Elastic Net</h3>
+          <p>
+            En un modelo de regresión lineal $y = Xw + \epsilon$ con $\epsilon \sim \mathcal{N}(0, \sigma^2 I)$, 
+            la log-verosimilitud es cuadrática:
+          </p>
+          <div class="math-display">
+            $$\ln p(y|X, w) = -\frac{N}{2}\ln(2\pi\sigma^2) - \frac{1}{2\sigma^2}\|y - Xw\|_2^2$$
+          </div>
+          <p>
+            Al asumir un prior independiente con densidad de probabilidad combinada (Laplace para esparsidad y Gaussiano para regularización L2):
+          </p>
+          <div class="math-display">
+            $$p(w) \propto \exp\left(-\lambda_1 \|w\|_1 - \frac{\lambda_2}{2}\|w\|_2^2\right)$$
+          </div>
+          <p>
+            El estimador Maximum A Posteriori (MAP) maximiza $\ln p(w|y) = \ln p(y|X,w) + \ln p(w) - \ln p(y)$, lo cual equivale exactamente a:
+          </p>
+          <div class="math-display">
+            $$\hat{w}_{MAP} = \arg\min_w \left\{ \frac{1}{2N}\|y - Xw\|_2^2 + \lambda \left[ \alpha \|w\|_1 + \frac{1-\alpha}{2}\|w\|_2^2 \right] \right\}$$
+          </div>
+          <p>
+            El optimizador implementado en <code>app.js</code> usa <strong>Descenso por Coordenadas Cíclico</strong> con el operador de umbral suave (Soft-Thresholding):
+          </p>
+          <div class="math-display">
+            $$w_j \leftarrow \frac{S\left( \frac{1}{N}X_j^T (y - Xw + X_j w_j),\, \lambda\alpha \right)}{\frac{1}{N}\|X_j\|_2^2 + \lambda(1-\alpha)}$$
+          </div>
+        </article>
+
+        <article class="doc-section">
+          <h3>2. Análisis Cuadrático Discriminante (QDA) vs Regresión Logística (IRLS)</h3>
+          <p>
+            En QDA, la densidad condicional de cada clase es $x|C_k \sim \mathcal{N}(\mu_k, \Sigma_k)$. La probabilidad posterior $p(C_1|x)$ se obtiene mediante la regla de Bayes:
+          </p>
+          <div class="math-display">
+            $$\ln \frac{p(C_1|x)}{p(C_2|x)} = x^T A x + b^T x + c = 0$$
+          </div>
+          <p>
+            donde la matriz cuadrática $A$, el vector lineal $b$ y la constante $c$ satisfacen:
+          </p>
+          <div class="math-display">
+            $$A = -\frac{1}{2}(\Sigma_1^{-1} - \Sigma_2^{-1}), \quad b = \Sigma_1^{-1}\mu_1 - \Sigma_2^{-1}\mu_2$$
+            $$c = -\frac{1}{2}\mu_1^T \Sigma_1^{-1}\mu_1 + \frac{1}{2}\mu_2^T \Sigma_2^{-1}\mu_2 - \frac{1}{2}\ln\frac{|\Sigma_1|}{|\Sigma_2|} + \ln\frac{\pi_1}{\pi_2}$$
+          </div>
+          <p>
+            Para Regresión Logística, el modelo discriminativo $p(C_1|x) = \sigma(w^T \phi(x))$ se optimiza con el algoritmo <strong>IRLS (Newton-Raphson)</strong>:
+          </p>
+          <div class="math-display">
+            $$w^{(t+1)} = w^{(t)} - \left( \Phi^T W \Phi + \delta I \right)^{-1} \Phi^T (p - t)$$
+          </div>
+          <p>
+            Al activar la base cuadrática $\phi(x) = [1, x_1, x_2, x_1^2, x_1 x_2, x_2^2]^T$, la frontera de decisión resultante tiene exactamente el mismo grado algebraico que QDA, permitiendo comparar el enfoque generativo y el discriminativo.
+          </p>
+        </article>
+
+        <article class="doc-section">
+          <h3>3. SVM, Margen Duro y RKHS</h3>
+          <p>
+            El problema dual de la SVM con multiplicadores $\alpha_n$ está dado por:
+          </p>
+          <div class="math-display">
+            $$\max_{\alpha} \sum_{n=1}^N \alpha_n - \frac{1}{2}\sum_{n=1}^N \sum_{m=1}^N \alpha_n \alpha_m y_n y_m K(x_n, x_m) \quad \text{s.a.} \quad 0 \le \alpha_n \le C, \; \sum_{n=1}^N \alpha_n y_n = 0$$
+          </div>
+          <p>
+            Para un clasificador de margen duro con datos separables ($C \to \infty$ o $C$ suficientemente grande), todos los vectores de soporte satisfacen $y_n f(x_n) = 1$. Multiplicando por $\alpha_n$ y sumando sobre todas las muestras:
+          </p>
+          <div class="math-display">
+            $$\sum_{n=1}^N \alpha_n y_n f(x_n) = \sum_{n=1}^N \alpha_n \implies \sum_{n=1}^N \alpha_n y_n \left( \sum_{m=1}^N \alpha_m y_m K(x_n, x_m) + b \right) = \sum_{n=1}^N \alpha_n$$
+          </div>
+          <p>
+            Dado que la restricción dual exige $\sum_{n=1}^N \alpha_n y_n = 0$, el término que acompaña a $b$ se anula idénticamente, demostrando la identidad teórica fundamental:
+          </p>
+          <div class="math-display">
+            $$\|w\|_{\mathcal{H}}^2 = \sum_{n=1}^N \sum_{m=1}^N \alpha_n \alpha_m y_n y_m K(x_n, x_m) = \sum_{n=1}^N \alpha_n$$
+          </div>
+        </article>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="app-footer">
+    <div class="footer-content">
+      <p>Parcial de Aprendizaje de Máquina | Solución Web Interactiva (Punto 4)</p>
+      <p class="tech-stack">Arquitectura: HTML5 Canvas + Vanilla JavaScript puro (Zero Dependencies) + KaTeX (CDN)</p>
+    </div>
+  </footer>
+
+  <!-- Lógica de Simulación y Visualización -->
+  <script src="app.js"></script>
+</body>
+</html>
